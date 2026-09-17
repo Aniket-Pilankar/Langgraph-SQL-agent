@@ -1,0 +1,39 @@
+@tailwind components;
+
+@layer components {
+  .chat-input {
+    @apply border-t border-gray-800 p-4;
+  }
+
+  .chat-input__field {
+    @apply flex items-end gap-3 bg-gray-900 border border-gray-700
+           rounded-xl px-4 py-3 focus-within:border-indigo-500 transition-colors;
+  }
+
+  .chat-input__textarea {
+    @apply flex-1 bg-transparent text-white placeholder-gray-500
+           resize-none outline-none text-sm leading-relaxed disabled:opacity-50;
+  }
+
+  .chat-input__send-btn {
+    @apply shrink-0 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40
+           disabled:cursor-not-allowed text-white rounded-lg p-2 transition-colors;
+  }
+
+  .chat-input__stop-btn {
+    @apply shrink-0 bg-gray-200 hover:bg-white text-gray-900 rounded-lg p-2
+           transition-colors;
+  }
+
+  .chat-input__mic {
+    @apply shrink-0 text-gray-400 hover:text-gray-200 disabled:opacity-40
+           disabled:cursor-not-allowed rounded-lg p-2 transition-colors self-end;
+  }
+  .chat-input__mic--on {
+    @apply text-red-400 animate-pulse;
+  }
+
+  .chat-input__hint {
+    @apply text-xs text-gray-600 mt-1.5 text-center;
+  }
+}

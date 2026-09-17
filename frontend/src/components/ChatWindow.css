@@ -1,0 +1,69 @@
+@tailwind components;
+
+@layer components {
+  .chat-window {
+    @apply flex flex-col h-screen bg-gray-950 text-white;
+  }
+
+  .chat-window__header {
+    @apply flex items-center justify-between px-6 py-4 border-b border-gray-800 shrink-0;
+  }
+  .chat-window__title {
+    @apply font-semibold text-white;
+  }
+  .chat-window__subtitle {
+    @apply text-xs text-gray-500;
+  }
+  .chat-window__new-btn {
+    @apply text-xs text-gray-500 hover:text-gray-300 border border-gray-700
+           hover:border-gray-500 px-3 py-1.5 rounded-lg transition-colors;
+  }
+
+  .chat-window__main {
+    @apply flex-1 overflow-y-auto px-4 py-6;
+  }
+
+  .chat-window__empty {
+    @apply flex flex-col items-center justify-center h-full gap-6 text-center;
+  }
+  .chat-window__empty-title {
+    @apply text-xl font-semibold text-gray-200 mb-2;
+  }
+  .chat-window__empty-text {
+    @apply text-sm text-gray-500 max-w-sm;
+  }
+
+  .chat-window__prompts {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg;
+  }
+  .chat-window__prompt {
+    @apply text-left text-xs text-gray-400 bg-gray-900 hover:bg-gray-800
+           border border-gray-800 hover:border-gray-700 rounded-xl px-4 py-3 transition-colors;
+  }
+
+  .chat-window__messages {
+    @apply max-w-3xl mx-auto;
+  }
+
+  .chat-window__thinking-row {
+    @apply flex justify-start mb-4;
+  }
+  .chat-window__thinking-bubble {
+    @apply bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-3;
+  }
+  .chat-window__thinking-dots {
+    @apply flex gap-1;
+  }
+  .chat-window__dot {
+    @apply w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce;
+  }
+
+  .chat-window__error {
+    @apply bg-red-950 border border-red-800 text-red-300 text-sm rounded-xl
+           px-4 py-3 mb-4 max-w-lg mx-auto text-center;
+  }
+
+  .chat-window__input-dock {
+    @apply shrink-0 max-w-3xl w-full mx-auto;
+  }
+}
