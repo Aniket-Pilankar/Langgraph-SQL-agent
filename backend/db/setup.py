@@ -12,11 +12,8 @@ import pandas as pd
 import psycopg
 from dotenv import load_dotenv
 
-load_dotenv()
-
-from langchain_openai import OpenAIEmbeddings  # noqa: E402
-
-from agent.memory_content import EXEMPLARS, TABLE_CARDS  # noqa: E402
+from agent.memory_content import EXEMPLARS, TABLE_CARDS
+from agent.retrieval import get_embeddings
 
 DB_DIR = Path(__file__).parent
 DATA_DIR = Path(__file__).parents[2] / "data"
@@ -134,7 +131,7 @@ def _vec(embedding: list[float]) -> str:
 
 
 def seed_memory(conn: psycopg.Connection) -> None:
-    emb = OpenAIEmbeddings(model="text-embedding-3-small", dimensions=512)
+    emb = get_embeddings()
     conn.execute("TRUNCATE schema_memory")
 
     card_vecs = emb.embed_documents([c["content"] for c in TABLE_CARDS])
@@ -155,6 +152,7 @@ def seed_memory(conn: psycopg.Connection) -> None:
 
 
 def main() -> None:
+    load_dotenv()
     if not any(DATA_DIR.glob("*.csv")):
         sys.exit(f"No CSV files found in {DATA_DIR}")
 
