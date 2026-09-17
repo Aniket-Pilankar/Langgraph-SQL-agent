@@ -1,0 +1,88 @@
+@tailwind components;
+
+@layer components {
+  .message-bubble {
+    @apply flex mb-4;
+  }
+  .message-bubble--user {
+    @apply justify-end;
+  }
+  .message-bubble--assistant {
+    @apply justify-start;
+  }
+
+  .message-bubble__col {
+    @apply max-w-[80%];
+  }
+  .message-bubble__col--user {
+    @apply order-2;
+  }
+  .message-bubble__col--assistant {
+    @apply order-1;
+  }
+
+  .message-bubble__label {
+    @apply text-xs text-gray-500 mb-1;
+  }
+  .message-bubble__label--user {
+    @apply text-right;
+  }
+  .message-bubble__label--assistant {
+    @apply text-left;
+  }
+
+  .message-bubble__body {
+    @apply rounded-2xl px-4 py-3 text-sm leading-relaxed;
+  }
+  .message-bubble__body--user {
+    @apply bg-indigo-600 text-white rounded-tr-sm;
+  }
+  .message-bubble__body--assistant {
+    @apply bg-gray-800 text-gray-100 rounded-tl-sm;
+  }
+
+  .message-bubble__text {
+    @apply whitespace-pre-wrap;
+  }
+
+  .message-bubble__markdown {
+    @apply prose prose-invert prose-sm max-w-none
+           prose-p:my-1 prose-pre:bg-gray-900 prose-pre:text-xs
+           prose-code:text-indigo-300 prose-code:bg-gray-900
+           prose-code:px-1 prose-code:rounded
+           prose-headings:text-gray-100 prose-strong:text-gray-100;
+  }
+
+  .message-bubble__cursor {
+    @apply inline-block w-0.5 h-4 bg-gray-400 animate-pulse ml-0.5 align-middle;
+  }
+
+  .message-bubble__copy {
+    @apply mt-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors;
+  }
+
+  .message-bubble__progress {
+    @apply mb-2 space-y-1;
+  }
+  .message-bubble__progress-step {
+    @apply flex items-center gap-2 text-xs text-gray-500;
+  }
+  .message-bubble__progress-dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full bg-gray-600 shrink-0;
+  }
+  .message-bubble__progress-dot--active {
+    @apply bg-indigo-400 animate-pulse;
+  }
+  .message-bubble__sql {
+    @apply ml-3.5 mt-1 mb-1 text-xs;
+  }
+  .message-bubble__sql-summary {
+    @apply cursor-pointer text-gray-500 hover:text-gray-300 select-none;
+  }
+  .message-bubble__sql-code {
+    @apply mt-1 p-2 rounded-lg bg-gray-900 text-indigo-200 whitespace-pre-wrap break-words font-mono;
+  }
+  .message-bubble__sql-error {
+    @apply ml-3.5 text-xs text-red-400;
+  }
+}
