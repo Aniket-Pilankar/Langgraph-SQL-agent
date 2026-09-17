@@ -3,17 +3,15 @@ import os
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+
+from agent.db import close_pools, get_admin_pool
+from agent.graph import build_graph
+from app.routes.chat import router as chat_router
 
 load_dotenv()
-
-from fastapi import FastAPI  # noqa: E402
-from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver  # noqa: E402
-
-from agent.db import close_pools, get_admin_pool  # noqa: E402
-from agent.graph import build_graph  # noqa: E402
-from app.routes.chat import router as chat_router  # noqa: E402
-
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
