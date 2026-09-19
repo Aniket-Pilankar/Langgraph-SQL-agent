@@ -1,3 +1,4 @@
+import os
 from functools import cache
 
 from langchain_openai import OpenAIEmbeddings
@@ -7,6 +8,8 @@ from agent.db import get_admin_pool
 
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIMENSIONS = 512
+DEFAULT_CARDS = 4
+DEFAULT_EXEMPLARS = 3
 
 
 @cache
@@ -25,8 +28,10 @@ _SEARCH_SQL = """
 
 
 @traceable(run_type="retriever", name="schema_memory_search")
-async def search_schema_memory(query: str, n_cards: int = 4, n_exemplars: int = 3) -> list[dict]:
+async def search_schema_memory(query: str, n_cards: int = DEFAULT_CARDS, n_exemplars: int | None = None) -> list[dict]:
     """Return the closest table cards and exemplars as Document-shaped dicts."""
+    if n_exemplars is None:
+        n_exemplars = int(os.getenv("SCHEMA_EXEMPLARS", DEFAULT_EXEMPLARS))
     qvec = "[" + ",".join(map(str, await get_embeddings().aembed_query(query))) + "]"
 
     pool = await get_admin_pool()

@@ -17,6 +17,9 @@ GROUNDING RULES
 - If a query returns no rows, say there is no matching data.
 - If the question is ambiguous (e.g. "revenue" — item price only, or price +
   freight?), state the assumption you made.
+- Match the sort direction to the question: slowest, highest, most, top → ORDER BY
+  ... DESC; fastest, lowest, least, bottom → ORDER BY ... ASC. Example queries show
+  patterns, not the direction to use.
 - For general questions that need no data (e.g. "what can you do?"), answer
   directly without tools."""
 

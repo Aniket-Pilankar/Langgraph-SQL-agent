@@ -33,6 +33,12 @@ def _progress_events(update: dict) -> list[dict]:
     return events
 
 
+def _fixed_answer(update: dict) -> str:
+    """Text from nodes that answer without an LLM call, so nothing reaches the token stream."""
+    delta = update.get("give_up") or {}
+    return "".join(m.content for m in delta.get("messages", []) if isinstance(m, AIMessage))
+
+
 def _answer_token(chunk: object, metadata: dict) -> str:
     if metadata.get("langgraph_node") != "agent":
         return ""
@@ -78,7 +84,7 @@ async def stream_turn(graph: CompiledStateGraph, thread_id: str, text: str) -> A
 
     try:
         async for mode, chunk in graph.astream(
-            {"messages": [HumanMessage(text)]},
+            {"messages": [HumanMessage(text)], "sql_attempts": 0},
             config,
             stream_mode=["messages", "updates", "custom"],
         ):
@@ -90,6 +96,10 @@ async def stream_turn(graph: CompiledStateGraph, thread_id: str, text: str) -> A
             elif mode == "updates":
                 for event in _progress_events(chunk):
                     yield sse({"type": "progress", "message_id": turn_id, **event})
+                fixed = _fixed_answer(chunk)
+                if fixed:
+                    answer += fixed
+                    yield sse({"type": "message_delta", "message_id": turn_id, "chunk": fixed})
             elif mode == "custom":
                 event = _block_event(chunk, turn_id, block_index)
                 if event:

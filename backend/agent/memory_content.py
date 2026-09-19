@@ -116,7 +116,7 @@ EXEMPLARS = [
             "       ROUND(AVG(EXTRACT(EPOCH FROM (o.delivered_at - o.purchase_timestamp))/86400)::numeric, 2) AS avg_days\n"
             "FROM orders o JOIN customers c USING (customer_id)\n"
             "WHERE o.delivered_at IS NOT NULL\n"
-            "GROUP BY c.state ORDER BY avg_days;"
+            "GROUP BY c.state;"
         ),
     },
     {
