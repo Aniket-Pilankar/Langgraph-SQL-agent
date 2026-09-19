@@ -1,10 +1,12 @@
 import json
 import logging
 import operator
+import os
 from functools import cache
 from typing import Annotated, Literal
 from uuid import uuid4
 
+import openai
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import Runnable
@@ -19,28 +21,43 @@ from agent.widgets import WidgetChoice, build_widget_html, is_chartable, last_sq
 
 logger = logging.getLogger(__name__)
 
-MODEL_NAME = "gpt-4o-mini"
-RECURSION_LIMIT = 12
+DEFAULT_MODEL = "gpt-4o-mini"
+RECURSION_LIMIT = 20
+MAX_SQL_ATTEMPTS = 3
 WIDGET_SAMPLE_ROWS = 3
+LLM_ATTEMPTS = 3
+
+# Some network edges in front of the OpenAI API intermittently answer valid requests
+# with an empty-body 404. The SDK only retries 408/409/429/5xx, so retry these too.
+_TRANSIENT_ERRORS = (openai.NotFoundError,)
+
+
+def model_name() -> str:
+    return os.getenv("AGENT_MODEL", DEFAULT_MODEL)
 
 
 @cache
 def get_llm() -> BaseChatModel:
-    return ChatOpenAI(model=MODEL_NAME, temperature=0)
+    return ChatOpenAI(model=model_name(), temperature=0)
 
 
 @cache
 def get_llm_with_tools() -> Runnable:
-    return get_llm().bind_tools(TOOLS)
+    return get_llm().bind_tools(TOOLS).with_retry(
+        retry_if_exception_type=_TRANSIENT_ERRORS, stop_after_attempt=LLM_ATTEMPTS
+    )
 
 
 @cache
 def get_widget_llm() -> Runnable:
-    return get_llm().with_structured_output(WidgetChoice)
+    return get_llm().with_structured_output(WidgetChoice).with_retry(
+        retry_if_exception_type=_TRANSIENT_ERRORS, stop_after_attempt=LLM_ATTEMPTS
+    )
 
 
 class AgentState(MessagesState):
     widgets: Annotated[list[dict], operator.add]
+    sql_attempts: int
 
 
 def repair_dangling_tool_calls(messages: list[AnyMessage]) -> list[AnyMessage]:
@@ -59,10 +76,48 @@ def repair_dangling_tool_calls(messages: list[AnyMessage]) -> list[AnyMessage]:
     return repaired
 
 
+def _latest_tool_messages(messages: list[AnyMessage]) -> list[ToolMessage]:
+    latest: list[ToolMessage] = []
+    for msg in reversed(messages):
+        if not isinstance(msg, ToolMessage):
+            break
+        latest.append(msg)
+    return latest
+
+
+def _sql_errors(messages: list[AnyMessage]) -> list[str]:
+    return [
+        m.artifact["error"]
+        for m in _latest_tool_messages(messages)
+        if m.name == "run_sql" and m.artifact and "error" in m.artifact
+    ]
+
+
 async def agent_node(state: AgentState) -> dict:
     messages = repair_dangling_tool_calls(state["messages"])
     response = await get_llm_with_tools().ainvoke([SystemMessage(SYSTEM_PROMPT), *messages])
     return {"messages": [response]}
+
+
+async def check_sql_node(state: AgentState) -> dict:
+    failures = len(_sql_errors(state["messages"]))
+    if not failures:
+        return {}
+    return {"sql_attempts": state.get("sql_attempts", 0) + failures}
+
+
+async def give_up_node(state: AgentState) -> dict:
+    errors = _sql_errors(state["messages"])
+    detail = f" The last database error was: {errors[-1].rstrip('.')}." if errors else ""
+    return {
+        "messages": [
+            AIMessage(
+                f"I couldn't build a working query for that after {MAX_SQL_ATTEMPTS} attempts.{detail} "
+                "Try rephrasing the question, or ask about orders, customers, products, sellers, "
+                "payments or reviews."
+            )
+        ]
+    }
 
 
 async def widget_node(state: AgentState) -> dict:
@@ -110,15 +165,25 @@ def route_after_agent(state: AgentState) -> Literal["tools", "widget", "__end__"
     return END
 
 
+def route_after_check(state: AgentState) -> Literal["agent", "give_up"]:
+    if state.get("sql_attempts", 0) >= MAX_SQL_ATTEMPTS:
+        return "give_up"
+    return "agent"
+
+
 def build_graph(checkpointer=None):
     builder = StateGraph(AgentState)
     builder.add_node("agent", agent_node)
     builder.add_node("tools", ToolNode(TOOLS))
+    builder.add_node("check_sql", check_sql_node)
+    builder.add_node("give_up", give_up_node)
     builder.add_node("widget", widget_node)
 
     builder.add_edge(START, "agent")
     builder.add_conditional_edges("agent", route_after_agent, ["tools", "widget", END])
-    builder.add_edge("tools", "agent")
+    builder.add_edge("tools", "check_sql")
+    builder.add_conditional_edges("check_sql", route_after_check, ["agent", "give_up"])
+    builder.add_edge("give_up", END)
     builder.add_edge("widget", END)
 
     return builder.compile(checkpointer=checkpointer)
