@@ -41,6 +41,26 @@ def _answer_token(chunk: object, metadata: dict) -> str:
     return chunk.content if isinstance(chunk.content, str) else ""
 
 
+def _block_event(chunk: dict, turn_id: str, index: int) -> dict | None:
+    kind = chunk.get("kind")
+    if kind == "block_start":
+        return {"type": "block_start", "message_id": turn_id, "block_id": chunk["block_id"], "index": index}
+    if kind == "block_delta":
+        return {"type": "block_delta", "message_id": turn_id, "block_id": chunk["block_id"], "chunk": chunk["html"]}
+    if kind == "block_stop":
+        return {"type": "block_stop", "message_id": turn_id, "block_id": chunk["block_id"], "is_complete": chunk["ok"]}
+    return None
+
+
+async def _save_partial_answer(graph: CompiledStateGraph, config: dict, text: str) -> None:
+    """Keep what the user already saw when they stop a turn. Checkpoints only commit
+    completed nodes, so the streamed text would otherwise be lost."""
+    try:
+        await graph.aupdate_state(config, {"messages": [AIMessage(text)]}, as_node="widget")
+    except Exception:
+        logger.exception("Could not save the partial answer")
+
+
 async def stream_turn(graph: CompiledStateGraph, thread_id: str, text: str) -> AsyncIterator[str]:
     turn_id = str(uuid4())
     yield sse({"type": "conversation_meta", "conversation_id": thread_id})
@@ -53,21 +73,32 @@ async def stream_turn(graph: CompiledStateGraph, thread_id: str, text: str) -> A
         "tags": ["api"],
         "metadata": {"thread_id": thread_id},
     }
+    answer = ""
+    block_index = 0
 
     try:
         async for mode, chunk in graph.astream(
             {"messages": [HumanMessage(text)]},
             config,
-            stream_mode=["messages", "updates"],
+            stream_mode=["messages", "updates", "custom"],
         ):
             if mode == "messages":
                 token = _answer_token(*chunk)
                 if token:
+                    answer += token
                     yield sse({"type": "message_delta", "message_id": turn_id, "chunk": token})
             elif mode == "updates":
                 for event in _progress_events(chunk):
                     yield sse({"type": "progress", "message_id": turn_id, **event})
+            elif mode == "custom":
+                event = _block_event(chunk, turn_id, block_index)
+                if event:
+                    if event["type"] == "block_start":
+                        block_index += 1
+                    yield sse(event)
     except asyncio.CancelledError:
+        if answer:
+            await asyncio.shield(_save_partial_answer(graph, config, answer))
         raise
     except GraphRecursionError:
         logger.warning("Recursion limit reached for thread %s", thread_id)

@@ -19,3 +19,22 @@ GROUNDING RULES
   freight?), state the assumption you made.
 - For general questions that need no data (e.g. "what can you do?"), answer
   directly without tools."""
+
+
+WIDGET_PROMPT = """Choose the best visualization for a query result.
+
+Question: {question}
+Columns: {columns}
+First rows: {sample_rows}
+Total rows: {row_count}
+
+Rules:
+- time series or ordered periods -> "line"
+- comparison of up to 12 categories -> "bar"
+- share of a whole with up to 6 categories -> "pie"
+- more than two columns, long lists, or text-heavy results -> "table"
+- single value, or a chart would not help -> "none"
+
+Use exact column names. label_column holds the names or dates, value_column holds
+the numbers. Leave both empty for "table" and "none". Keep the title under 60
+characters and do not invent values."""
