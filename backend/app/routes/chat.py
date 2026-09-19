@@ -39,10 +39,19 @@ async def get_messages(thread_id: UUID, request: Request) -> list[dict]:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
     snapshot = await request.app.state.graph.aget_state({"configurable": {"thread_id": str(thread_id)}})
+    widgets: dict[str, list[str]] = {}
+    for widget in snapshot.values.get("widgets", []):
+        widgets.setdefault(widget["message_id"], []).append(widget["html"])
+
     messages = []
     for msg in snapshot.values.get("messages", []):
         if isinstance(msg, HumanMessage):
             messages.append({"id": msg.id, "role": "user", "content": msg.content})
         elif isinstance(msg, AIMessage) and not msg.tool_calls and msg.content:
-            messages.append({"id": msg.id, "role": "assistant", "content": msg.content})
+            messages.append({
+                "id": msg.id,
+                "role": "assistant",
+                "content": msg.content,
+                "widgets": widgets.get(msg.id, []),
+            })
     return messages
