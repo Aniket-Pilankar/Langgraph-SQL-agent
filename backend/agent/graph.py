@@ -8,7 +8,13 @@ from uuid import uuid4
 
 import openai
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import (
+    AIMessage,
+    AnyMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.runnables import Runnable
 from langchain_openai import ChatOpenAI
 from langgraph.config import get_stream_writer
