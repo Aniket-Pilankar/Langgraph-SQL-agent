@@ -5,7 +5,11 @@ from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel, Field
 
-from app.conversations import conversation_exists, list_conversations, upsert_conversation
+from app.conversations import (
+    conversation_exists,
+    list_conversations,
+    upsert_conversation,
+)
 from app.streaming import stream_turn
 
 router = APIRouter(prefix="/chat", tags=["chat"])

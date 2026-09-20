@@ -12,7 +12,7 @@ const SUGGESTED_PROMPTS = [
 ]
 
 export function ChatWindow() {
-  const { messages, isStreaming, error, sendMessage, stopStreaming, newConversation } = useChat()
+  const { messages, isStreaming, error, sendMessage, stopStreaming } = useChat()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -26,9 +26,11 @@ export function ChatWindow() {
           <h1 className="chat-window__title">SQL Agent</h1>
           <p className="chat-window__subtitle">Olist Brazilian E-Commerce</p>
         </div>
+        {/* Hidden until the conversation sidebar exists; newConversation only clears the screen.
         <button onClick={newConversation} className="chat-window__new-btn">
           + New chat
         </button>
+        */}
       </header>
 
       <main className="chat-window__main">
